@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="報酬ダッシュボード">
+<meta name="theme-color" content="#f5f5f3">
+<title>ライバー報酬ダッシュボード</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { height: 100%; }
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Hiragino Sans', 'Noto Sans JP', sans-serif;
+  background: #f5f5f3;
+  min-height: 100%;
+  padding-top: max(1rem, env(safe-area-inset-top));
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  padding-left: env(safe-area-inset-left, 0);
+  padding-right: env(safe-area-inset-right, 0);
+}
+.wrap { max-width: 480px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; padding: 0 16px 1rem; }
+.logo { font-size: 12px; color: #888; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; padding: 4px 0; }
+.card { background: #fff; border: 1px solid #e8e8e5; border-radius: 16px; padding: 1.1rem 1.25rem; }
+.card-title { font-size: 11px; color: #999; font-weight: 600; margin-bottom: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+.screen { display: none; flex-direction: column; gap: 14px; }
+.screen.active { display: flex; }
+label { font-size: 14px; color: #555; display: block; margin-bottom: 6px; font-weight: 500; }
+input[type="text"], input[type="date"], input[type="number"], input[type="password"] {
+  width: 100%; padding: 14px; font-size: 16px; border: 1.5px solid #ddd; border-radius: 12px;
+  background: #fafafa; color: #222; outline: none; font-family: inherit;
+  -webkit-appearance: none; appearance: none;
+}
+input:focus { border-color: #555; background: #fff; }
+.btn-primary {
+  width: 100%; padding: 16px; font-size: 16px; font-weight: 600; background: #222; color: #fff;
+  border: none; border-radius: 12px; cursor: pointer; font-family: inherit; min-height: 52px;
+  -webkit-appearance: none; touch-action: manipulation;
+}
+.btn-primary:active { opacity: 0.75; transform: scale(0.98); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-secondary {
+  width: 100%; padding: 15px; font-size: 15px; background: none; color: #333;
+  border: 1.5px solid #ddd; border-radius: 12px; cursor: pointer; font-family: inherit;
+  min-height: 52px; -webkit-appearance: none; touch-action: manipulation;
+}
+.btn-secondary:active { background: #f0f0ee; }
+.error-msg { font-size: 13px; color: #e24b4a; text-align: center; padding: 4px 0; line-height: 1.5; }
+.confirm-name { font-size: 22px; font-weight: 600; text-align: center; padding: 14px 0 4px; word-break: break-all; line-height: 1.4; }
+.confirm-sub { font-size: 14px; color: #888; text-align: center; margin-bottom: 4px; }
+.divider { height: 1px; background: #ebebeb; margin: 2px 0; }
+.big-reward { font-size: 38px; font-weight: 700; line-height: 1; letter-spacing: -0.02em; }
+.reward-grid { display: grid; gap: 8px; margin-top: 14px; }
+.reward-item { background: #f7f7f5; border-radius: 10px; padding: 11px 12px; }
+.reward-item-label { font-size: 11px; color: #999; margin-bottom: 5px; font-weight: 500; }
+.reward-item-val { font-size: 16px; font-weight: 600; color: #222; }
+.bc-highlight { background: #f7f7f5; border-radius: 12px; padding: 12px 16px; display: flex; justify-content: space-between; align-items: center; }
+.bc-val { font-size: 22px; font-weight: 700; }
+.bc-unit { font-size: 13px; color: #888; margin-left: 4px; }
+.bar-bg { height: 9px; background: #ebebeb; border-radius: 99px; overflow: hidden; margin: 9px 0; }
+.bar-fill { height: 100%; border-radius: 99px; transition: width 0.6s ease; }
+.hours-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: 500; color: #555; }
+.note { font-size: 12px; color: #999; margin-top: 5px; }
+.badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+.badge-hourly { background: #e6f1fb; color: #185fa5; }
+.badge-perf { background: #eaf3de; color: #3b6d11; }
+.tag-row { display: flex; gap: 8px; align-items: center; margin-top: 6px; flex-wrap: wrap; }
+.logout-btn { font-size: 12px; color: #888; background: none; border: 1px solid #e0e0e0; padding: 6px 12px; border-radius: 20px; cursor: pointer; touch-action: manipulation; }
+.logout-btn:active { background: #f0f0f0; }
+.payout-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid #f0f0f0; }
+.payout-item:last-child { border-bottom: none; padding-bottom: 0; }
+.payout-type { font-size: 14px; font-weight: 600; color: #222; }
+.payout-desc { font-size: 12px; color: #888; margin-top: 3px; line-height: 1.5; }
+.payout-date { font-size: 12px; color: #666; text-align: right; flex-shrink: 0; margin-left: 12px; line-height: 1.5; }
+.step-list { display: flex; flex-direction: column; gap: 12px; margin-top: 4px; }
+.step { display: flex; gap: 12px; align-items: flex-start; }
+.step-num { width: 24px; height: 24px; border-radius: 50%; background: #f0f0f0; border: 1px solid #ddd; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #666; flex-shrink: 0; margin-top: 1px; }
+.step-text { font-size: 13px; line-height: 1.6; color: #333; padding-top: 2px; }
+.step-link { color: #185fa5; word-break: break-all; }
+.spinner { width: 28px; height: 28px; border: 3px solid #e8e8e5; border-top-color: #666; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto; }
+.loading-sec { font-size: 13px; color: #aaa; margin-top: 10px; text-align: center; }
+.yen-wrap { position: relative; }
+.yen-wrap input { padding-left: 30px; }
+.yen-symbol { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 16px; color: #666; pointer-events: none; }
+.pin-desc { font-size: 14px; color: #555; line-height: 1.7; margin-bottom: 14px; }
+.fail-count { font-size: 13px; color: #e24b4a; font-weight: 600; text-align: center; padding: 4px 0; }
+.hint-text { font-size: 12px; color: #999; text-align: center; margin-top: 4px; line-height: 1.5; }
+
+/* タブ */
+.tab-bar { display: flex; background: #fff; border: 1px solid #e8e8e5; border-radius: 12px; padding: 4px; gap: 4px; }
+.tab-btn { flex: 1; padding: 10px; font-size: 13px; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; font-family: inherit; background: none; color: #999; touch-action: manipulation; transition: all 0.2s; }
+.tab-btn.active { background: #222; color: #fff; }
+.tab-btn:active { opacity: 0.8; }
+
+/* 履歴 */
+.history-item { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid #f0f0f0; }
+.history-item:last-child { border-bottom: none; padding-bottom: 0; }
+.history-ym { font-size: 14px; font-weight: 600; color: #222; }
+.history-bc { font-size: 12px; color: #999; margin-top: 3px; }
+.history-right { text-align: right; }
+.history-total { font-size: 17px; font-weight: 700; color: #222; }
+.history-badge { font-size: 11px; padding: 2px 8px; border-radius: 10px; margin-top: 4px; display: inline-block; }
+.history-empty { text-align: center; padding: 24px 0; font-size: 14px; color: #aaa; }
+
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (max-width: 390px) {
+  .big-reward { font-size: 32px; }
+  .reward-item-val { font-size: 15px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="logo">ライバー報酬ダッシュボード</div>
+
+  <!-- ログイン画面 -->
+  <div class="screen active" id="screen-login">
+    <div class="card">
+      <div class="card-title">ログイン</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px;">
+        <div>
+          <label>本名（スペースなし）</label>
+          <input type="text" id="inputName" placeholder="例：山田花子" autocomplete="off">
+        </div>
+        <div>
+          <label>生年月日</label>
+          <input type="date" id="inputBirth">
+        </div>
+        <button class="btn-primary" id="loginBtn" onclick="doLogin()">確認する</button>
+        <div class="error-msg" id="errMsg" style="display:none;"></div>
+      </div>
+    </div>
+    <div style="font-size:12px;color:#aaa;text-align:center;padding:4px 0;">※ 登録情報と照合します</div>
+  </div>
+
+  <!-- 本人確認画面 -->
+  <div class="screen" id="screen-confirm">
+    <div class="card">
+      <div class="card-title">本人確認</div>
+      <div class="confirm-name" id="confirmOpenId"></div>
+      <div class="confirm-sub">さんでお間違いないですか？</div>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-top:20px;">
+        <button class="btn-primary" onclick="confirmYes()">はい、合っています</button>
+        <button class="btn-secondary" onclick="confirmNo()">いいえ、違います</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ローディング画面 -->
+  <div class="screen" id="screen-loading">
+    <div class="card" style="text-align:center;padding:40px 1.25rem;">
+      <div class="spinner"></div>
+      <div style="font-size:14px;color:#888;margin-top:14px;">データを読み込み中...</div>
+      <div class="loading-sec" id="loadingSec">0秒</div>
+    </div>
+  </div>
+
+  <!-- PIN設定画面 -->
+  <div class="screen" id="screen-pin-set">
+    <div class="card">
+      <div class="card-title">PINコードを設定</div>
+      <p class="pin-desc">セキュリティのため、6桁の英数字のPINコードを設定してください。次回以降のログインに使用します。</p>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <div>
+          <label>PINコード（6桁の英数字）</label>
+          <input type="password" id="inputPinSet" placeholder="例：abc123" maxlength="6" autocomplete="new-password">
+        </div>
+        <div>
+          <label>PINコード（確認）</label>
+          <input type="password" id="inputPinSetConfirm" placeholder="もう一度入力" maxlength="6" autocomplete="new-password">
+        </div>
+        <button class="btn-primary" id="pinSetBtn" onclick="doSetPin()">設定する</button>
+        <div class="error-msg" id="pinSetErrMsg" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="hint-text">※ PINコードは大切に保管してください</div>
+  </div>
+
+  <!-- PIN入力画面 -->
+  <div class="screen" id="screen-pin-input">
+    <div class="card">
+      <div class="card-title">PINコードを入力</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px;">
+        <div>
+          <label>PINコード（6桁の英数字）</label>
+          <input type="password" id="inputPin" placeholder="PINコードを入力" maxlength="6" autocomplete="current-password">
+        </div>
+        <button class="btn-primary" id="pinBtn" onclick="doVerifyPin()">確認する</button>
+        <div class="error-msg" id="pinErrMsg" style="display:none;"></div>
+        <div class="fail-count" id="pinFailCount" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="hint-text">※ 5回失敗すると30分ロックされます</div>
+  </div>
+
+  <!-- 時給入力画面 -->
+  <div class="screen" id="screen-rate">
+    <div class="card">
+      <div class="card-title">時給を入力してください</div>
+      <div style="display:flex;flex-direction:column;gap:14px;margin-top:4px;">
+        <div class="yen-wrap">
+          <span class="yen-symbol">¥</span>
+          <input type="number" id="inputRate" placeholder="例：1000" min="1" inputmode="numeric">
+        </div>
+        <button class="btn-primary" id="rateBtn" onclick="saveRate()">登録する</button>
+        <div class="error-msg" id="rateErrMsg" style="display:none;"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">時給が分からない場合</div>
+      <p style="font-size:13px;color:#555;line-height:1.8;">
+        時給が分からない場合は、サポートラインではなく契約担当者LINEに送付されている<br>
+        <strong>【契約・報酬まとめ】</strong>に添付されているURLからご確認ください！<br><br>
+        ※もし分からない場合は契約担当者にご確認ください！
+      </p>
+    </div>
+  </div>
+
+  <!-- メイン画面 -->
+  <div class="screen" id="screen-main">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:18px;font-weight:700;word-break:break-all;line-height:1.4;" id="dispOpenId"></div>
+          <div class="tag-row">
+            <span class="badge badge-perf" id="typeBadge">成果報酬制</span>
+            <span style="font-size:12px;color:#999;" id="monthLabel"></span>
+          </div>
+        </div>
+        <button class="logout-btn" onclick="doLogout()" style="margin-left:12px;flex-shrink:0;">ログアウト</button>
+      </div>
+      <div class="divider"></div>
+      <div style="margin-top:14px;">
+        <div class="card-title">今月の報酬（概算）</div>
+        <div class="big-reward">¥<span id="rewardVal"></span></div>
+        <div class="reward-grid" id="rewardGrid"></div>
+      </div>
+    </div>
+
+    <!-- タブ -->
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab('now')" id="tab-now">今月</button>
+      <button class="tab-btn" onclick="switchTab('history')" id="tab-history">過去の報酬</button>
+    </div>
+
+    <!-- 今月タブコンテンツ -->
+    <div id="tab-content-now">
+      <div class="card">
+        <div class="card-title">今月の合計BC</div>
+        <div class="bc-highlight">
+          <div style="font-size:12px;color:#999;font-weight:500;">累計BC</div>
+          <div><span class="bc-val" id="bcVal"></span><span class="bc-unit">BC</span></div>
+        </div>
+      </div>
+
+      <div class="card" id="hoursCard" style="display:none;">
+        <div class="card-title">有効配信時間</div>
+        <div class="hours-row"><span id="hoursNow"></span><span style="color:#999;">上限 50時間</span></div>
+        <div class="bar-bg"><div class="bar-fill" id="hoursBar"></div></div>
+        <div class="note" id="hoursNote"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <div class="reward-item" style="flex:1;"><div class="reward-item-label">時給単価</div><div class="reward-item-val" id="hourlyRate"></div></div>
+          <div class="reward-item" style="flex:1;"><div class="reward-item-label">時給対象時間</div><div class="reward-item-val" id="hourlyHours"></div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">次のボーナスまで</div>
+        <div style="margin-top:6px;">
+          <div style="font-size:13px;color:#999;" id="bonusBcRemain"></div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:5px;">
+            <div style="font-size:20px;font-weight:700;" id="bonusNext"></div>
+            <div style="font-size:12px;color:#1D9E75;font-weight:700;" id="bonusDiff"></div>
+          </div>
+        </div>
+        <div style="margin-top:10px;">
+          <div class="hours-row"><span id="bonusNowBc"></span><span style="color:#999;" id="bonusNextBc"></span></div>
+          <div class="bar-bg"><div class="bar-fill" id="bonusBar" style="background:#7F77DD;"></div></div>
+        </div>
+        <div class="note" id="bonusCurrentLabel"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">払い出しタイミング</div>
+        <div class="payout-item">
+          <div><div class="payout-type" id="payoutTitle1"></div><div class="payout-desc" id="payoutDesc1"></div></div>
+          <div class="payout-date" id="payoutDate1"></div>
+        </div>
+        <div class="payout-item">
+          <div><div class="payout-type">成果報酬・ボーナス分</div><div class="payout-desc">毎月15日に前月分反映<br>自分で引き落とし手続きが必要</div></div>
+          <div class="payout-date">毎月15日<br>反映</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">成果報酬・ボーナスの引き出し手順</div>
+        <div class="step-list">
+          <div class="step"><div class="step-num">1</div><div class="step-text">WEB版 17Live にログイン<br><a class="step-link" href="https://17.live/ja" target="_blank">https://17.live/ja</a></div></div>
+          <div class="step"><div class="step-num">2</div><div class="step-text">右上アイコン → <strong>マイレベニュー</strong> を選択</div></div>
+          <div class="step"><div class="step-num">3</div><div class="step-text">「個人情報」タブ → Step.1 利用規約に同意<br><span style="font-size:11px;color:#aaa;">※初回のみ。2回目以降は④へ</span></div></div>
+          <div class="step"><div class="step-num">4</div><div class="step-text">「収益管理」タブで前月の報酬を確認し「確認」を選択 → 残高に反映</div></div>
+          <div class="step"><div class="step-num">5</div><div class="step-text">残高横の「連携」からドットマネーと連携<br><span style="font-size:11px;color:#aaa;">※初回のみ。アカウントがない場合は新規開設</span></div></div>
+          <div class="step"><div class="step-num">6</div><div class="step-text">「引き出し」→「ドットマネーby Ameba」を選択 → 金額入力して申請</div></div>
+          <div class="step"><div class="step-num">7</div><div class="step-text">ドットマネー通帳タブで付与履歴を確認。「マネーをつかう」から換金手続きへ<br><a class="step-link" href="https://d-money.jp" target="_blank">https://d-money.jp</a></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 過去の報酬タブコンテンツ -->
+    <div id="tab-content-history" style="display:none;">
+      <div class="card" id="historyCard">
+        <div class="card-title">過去の報酬履歴</div>
+        <div id="historyList">
+          <div class="history-empty">読み込み中...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const GAS_URL = "https://script.google.com/macros/s/AKfycbxi1XfeqQVN4pq9M41uUUfBYDdciqNo7QopuntBhWqHqxTLnALyjJ4ZQjMUeF1-E5gN/exec";
+const BONUS_TABLE = [
+  {min:0,max:250000,amount:0},{min:250001,max:750000,amount:15000},
+  {min:750001,max:1250000,amount:30000},{min:1250001,max:2500000,amount:50000},
+  {min:2500001,max:3500000,amount:100000},{min:3500001,max:4500000,amount:120000},
+  {min:4500001,max:5500000,amount:150000},{min:5500001,max:6500000,amount:180000},
+  {min:6500001,max:7500000,amount:210000},{min:7500001,max:9000000,amount:250000},
+  {min:9000001,max:10500000,amount:290000},{min:10500001,max:12500000,amount:330000},
+  {min:12500001,max:15000000,amount:400000},{min:15000001,max:20000000,amount:500000},
+  {min:20000001,max:25000000,amount:650000},{min:25000001,max:55000000,amount:800000},
+  {min:55000001,max:85000000,amount:1800000},{min:85000001,max:125000000,amount:2800000},
+  {min:125000001,max:Infinity,amount:4000000},
+];
+
+let currentUser=null, secTimer=null, secCount=0, historyLoaded=false;
+
+function fmt(n){return Math.round(n).toLocaleString('ja-JP');}
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active');window.scrollTo(0,0);}
+function getBonusInfo(bc){let current=BONUS_TABLE[0];for(let t of BONUS_TABLE){if(bc>=t.min&&bc<=t.max){current=t;break;}}const idx=BONUS_TABLE.indexOf(current);return{current,next:idx+1<BONUS_TABLE.length?BONUS_TABLE[idx+1]:null};}
+function showError(msg,id){const el=document.getElementById(id||'errMsg');el.textContent=msg;el.style.display='block';}
+function hideError(id){document.getElementById(id||'errMsg').style.display='none';}
+function startTimer(){secCount=0;document.getElementById('loadingSec').textContent='0秒';secTimer=setInterval(()=>{secCount++;document.getElementById('loadingSec').textContent=secCount+'秒';},1000);}
+function stopTimer(){clearInterval(secTimer);}
+
+function callGAS(params,onSuccess,onError){
+  const cbName='cb_'+Date.now();
+  const script=document.createElement('script');
+  const timeout=setTimeout(()=>{stopTimer();delete window[cbName];script.remove();onError('通信がタイムアウトしました。再度お試しください。');},60000);
+  window[cbName]=function(data){clearTimeout(timeout);stopTimer();delete window[cbName];script.remove();onSuccess(data);};
+  const query=Object.entries({...params,callback:cbName}).map(([k,v])=>`${k}=${encodeURIComponent(v)}`).join('&');
+  script.src=`${GAS_URL}?${query}`;
+  document.head.appendChild(script);
+}
+
+// タブ切替
+function switchTab(tab) {
+  document.getElementById('tab-now').classList.toggle('active', tab==='now');
+  document.getElementById('tab-history').classList.toggle('active', tab==='history');
+  document.getElementById('tab-content-now').style.display = tab==='now' ? 'flex' : 'none';
+  document.getElementById('tab-content-now').style.flexDirection = 'column';
+  document.getElementById('tab-content-now').style.gap = '14px';
+  document.getElementById('tab-content-history').style.display = tab==='history' ? 'block' : 'none';
+
+  if(tab==='history' && !historyLoaded) {
+    loadHistory();
+  }
+}
+
+// 過去の履歴を読み込み
+function loadHistory() {
+  document.getElementById('historyList').innerHTML = '<div class="history-empty">読み込み中...</div>';
+  callGAS({action:'getHistory', streamerId:currentUser.streamerId}, data => {
+    historyLoaded = true;
+    if(data.success && data.history.length > 0) {
+      renderHistory(data.history);
+    } else {
+      document.getElementById('historyList').innerHTML = '<div class="history-empty">過去のデータがまだありません</div>';
+    }
+  }, () => {
+    document.getElementById('historyList').innerHTML = '<div class="history-empty">データの取得に失敗しました</div>';
+  });
+}
+
+function renderHistory(history) {
+  const list = document.getElementById('historyList');
+  list.innerHTML = history.map(h => {
+    const ym = h.ym; // YYYY-MM
+    const [year, month] = ym.split('-');
+    const label = `${year}年${parseInt(month)}月`;
+    const badgeClass = h.isHourly ? 'badge-hourly' : 'badge-perf';
+    const badgeText = h.isHourly ? '時給制' : '成果報酬';
+    return `
+      <div class="history-item">
+        <div>
+          <div class="history-ym">${label}</div>
+          <div class="history-bc">${fmt(h.bc)} BC</div>
+          <span class="history-badge ${badgeClass}">${badgeText}</span>
+        </div>
+        <div class="history-right">
+          <div class="history-total">¥${fmt(h.total)}</div>
+          <div style="font-size:11px;color:#999;margin-top:4px;">
+            ${h.isHourly ? `時給¥${fmt(h.hourly)} + ` : ''}成果¥${fmt(h.perf)} + ボーナス¥${fmt(h.bonus)}
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function doLogin(){
+  const name=document.getElementById('inputName').value.trim().replace(/\s+/g,'');
+  const birth=document.getElementById('inputBirth').value;
+  if(!name||!birth){showError('名前と生年月日を入力してください');return;}
+  const btn=document.getElementById('loginBtn');
+  btn.disabled=true;btn.textContent='確認中...';
+  hideError('errMsg');showScreen('loading');startTimer();
+  callGAS({action:'login',name,birth},data=>{
+    btn.disabled=false;btn.textContent='確認する';
+    if(data.success){currentUser=data.user;document.getElementById('confirmOpenId').textContent=data.user.openId;showScreen('confirm');}
+    else{showScreen('login');showError('名前または生年月日が一致しません');}
+  },msg=>{btn.disabled=false;btn.textContent='確認する';showScreen('login');showError(msg);});
+}
+
+function confirmYes(){
+  if(!currentUser.hasPin){showScreen('pin-set');}
+  else{document.getElementById('inputPin').value='';hideError('pinErrMsg');document.getElementById('pinFailCount').style.display='none';showScreen('pin-input');}
+}
+
+function confirmNo(){currentUser=null;document.getElementById('inputName').value='';document.getElementById('inputBirth').value='';showScreen('login');}
+
+function doSetPin(){
+  const pin=document.getElementById('inputPinSet').value.trim();
+  const pinConfirm=document.getElementById('inputPinSetConfirm').value.trim();
+  hideError('pinSetErrMsg');
+  if(!pin||pin.length!==6){showError('6桁の英数字で入力してください','pinSetErrMsg');return;}
+  if(!/^[a-zA-Z0-9]{6}$/.test(pin)){showError('英数字のみ使用できます','pinSetErrMsg');return;}
+  if(pin!==pinConfirm){showError('PINコードが一致しません','pinSetErrMsg');return;}
+  const btn=document.getElementById('pinSetBtn');
+  btn.disabled=true;btn.textContent='設定中...';
+  showScreen('loading');startTimer();
+  callGAS({action:'setPin',streamerId:currentUser.streamerId,pin},data=>{
+    btn.disabled=false;btn.textContent='設定する';
+    if(data.success){currentUser.hasPin=true;goAfterPin();}
+    else{showScreen('pin-set');showError('設定に失敗しました。再度お試しください。','pinSetErrMsg');}
+  },msg=>{btn.disabled=false;btn.textContent='設定する';showScreen('pin-set');showError(msg,'pinSetErrMsg');});
+}
+
+function doVerifyPin(){
+  const pin=document.getElementById('inputPin').value.trim();
+  if(!pin){showError('PINコードを入力してください','pinErrMsg');return;}
+  const btn=document.getElementById('pinBtn');
+  btn.disabled=true;btn.textContent='確認中...';
+  hideError('pinErrMsg');document.getElementById('pinFailCount').style.display='none';
+  showScreen('loading');startTimer();
+  callGAS({action:'verifyPin',streamerId:currentUser.streamerId,pin},data=>{
+    btn.disabled=false;btn.textContent='確認する';
+    if(data.success){goAfterPin();}
+    else if(data.locked){showScreen('pin-input');showError(`ログインがロックされています。${data.remainMin}分後に再試行してください。`,'pinErrMsg');}
+    else{
+      showScreen('pin-input');showError('PINコードが違います','pinErrMsg');
+      if(data.remainCount!==undefined){const fc=document.getElementById('pinFailCount');fc.textContent=`あと${data.remainCount}回失敗するとロックされます`;fc.style.display='block';}
+    }
+  },msg=>{btn.disabled=false;btn.textContent='確認する';showScreen('pin-input');showError(msg,'pinErrMsg');});
+}
+
+function goAfterPin(){
+  historyLoaded=false;
+  if(currentUser.needsRateInput){showScreen('rate');}
+  else{showScreen('main');renderDashboard(currentUser);switchTab('now');}
+}
+
+function saveRate(){
+  const rate=document.getElementById('inputRate').value;
+  if(!rate||Number(rate)<=0){showError('時給を正しく入力してください','rateErrMsg');return;}
+  const btn=document.getElementById('rateBtn');
+  btn.disabled=true;btn.textContent='登録中...';
+  hideError('rateErrMsg');showScreen('loading');startTimer();
+  callGAS({action:'saveRate',streamerId:currentUser.streamerId,rate:Number(rate)},data=>{
+    btn.disabled=false;btn.textContent='登録する';
+    if(data.success){currentUser.hourlyRate=Number(rate);currentUser.needsRateInput=false;showScreen('main');renderDashboard(currentUser);switchTab('now');}
+    else{showScreen('rate');showError('登録に失敗しました。再度お試しください。','rateErrMsg');}
+  },msg=>{btn.disabled=false;btn.textContent='登録する';showScreen('rate');showError(msg,'rateErrMsg');});
+}
+
+function doLogout(){
+  currentUser=null;historyLoaded=false;
+  document.getElementById('inputName').value='';
+  document.getElementById('inputBirth').value='';
+  showScreen('login');
+}
+
+function renderDashboard(u){
+  const now=new Date();
+  document.getElementById('dispOpenId').textContent=u.openId;
+  document.getElementById('monthLabel').textContent=`${now.getFullYear()}年${now.getMonth()+1}月`;
+  document.getElementById('bcVal').textContent=fmt(u.bc);
+  const isHourly=u.isHourly;
+  document.getElementById('typeBadge').textContent=isHourly?'時給制':'成果報酬制';
+  document.getElementById('typeBadge').className='badge '+(isHourly?'badge-hourly':'badge-perf');
+  const perf=Math.round(u.bc*0.07);
+  const{current:bonusTier,next:nextTier}=getBonusInfo(u.bc);
+  const bonus=bonusTier.amount;
+  let hourly=0;
+  if(isHourly&&u.validHours>20)hourly=Math.round(u.hourlyRate*Math.min(u.validHours,50));
+  document.getElementById('rewardVal').textContent=fmt(hourly+perf+bonus);
+  const grid=document.getElementById('rewardGrid');
+  if(isHourly){
+    grid.style.gridTemplateColumns='1fr 1fr 1fr';
+    grid.innerHTML=`<div class="reward-item"><div class="reward-item-label">時給分</div><div class="reward-item-val">¥${fmt(hourly)}</div></div><div class="reward-item"><div class="reward-item-label">成果報酬</div><div class="reward-item-val">¥${fmt(perf)}</div></div><div class="reward-item"><div class="reward-item-label">ボーナス</div><div class="reward-item-val">¥${fmt(bonus)}</div></div>`;
+  }else{
+    grid.style.gridTemplateColumns='1fr 1fr';
+    grid.innerHTML=`<div class="reward-item"><div class="reward-item-label">成果報酬</div><div class="reward-item-val">¥${fmt(perf)}</div></div><div class="reward-item"><div class="reward-item-label">ボーナス</div><div class="reward-item-val">¥${fmt(bonus)}</div></div>`;
+  }
+  const hc=document.getElementById('hoursCard');
+  if(isHourly){
+    hc.style.display='block';
+    const h=u.validHours;
+    document.getElementById('hoursNow').textContent=`${h}時間`;
+    document.getElementById('hoursBar').style.width=Math.min(h/50*100,100)+'%';
+    document.getElementById('hoursBar').style.background=h<20?'#BA7517':h>=50?'#E24B4A':'#1D9E75';
+    document.getElementById('hoursNote').textContent=h<20?`あと${20-h}時間で時給発生`:h>=50?'上限に達しています':`あと${50-h}時間で上限`;
+    document.getElementById('hourlyRate').textContent=`¥${fmt(u.hourlyRate)}/h`;
+    document.getElementById('hourlyHours').textContent=h>20?`${Math.min(h,50)}h`:`${h}h（対象外）`;
+  }else hc.style.display='none';
+  if(nextTier){
+    const remain=nextTier.min-u.bc;
+    document.getElementById('bonusBcRemain').innerHTML=`あと <strong>${fmt(remain)} BC</strong> で次のライン`;
+    document.getElementById('bonusNext').textContent=`¥${fmt(nextTier.amount)}`;
+    document.getElementById('bonusDiff').textContent=`+¥${fmt(nextTier.amount-bonus)} UP`;
+    document.getElementById('bonusNowBc').textContent=`${fmt(u.bc)} BC`;
+    document.getElementById('bonusNextBc').textContent=`${fmt(nextTier.min)} BC`;
+    document.getElementById('bonusBar').style.width=Math.min((u.bc-bonusTier.min)/(nextTier.min-bonusTier.min)*100,100)+'%';
+  }else{
+    document.getElementById('bonusBcRemain').textContent='最高ボーナスに到達しています！';
+    document.getElementById('bonusNext').textContent=`¥${fmt(bonus)}`;
+    document.getElementById('bonusDiff').textContent='MAX';
+    document.getElementById('bonusBar').style.width='100%';
+  }
+  document.getElementById('bonusCurrentLabel').textContent=`現在のボーナス：¥${fmt(bonus)}（${fmt(bonusTier.min)}〜${bonusTier.max===Infinity?'以上':fmt(bonusTier.max)} BC）`;
+  if(isHourly){
+    document.getElementById('payoutTitle1').textContent='時給分';
+    document.getElementById('payoutDesc1').textContent='登録口座へ直接振込';
+    document.getElementById('payoutDate1').innerHTML='翌月末<br>最終営業日';
+  }else{
+    document.getElementById('payoutTitle1').textContent='時給なし';
+    document.getElementById('payoutDesc1').textContent='成果報酬・ボーナスのみ対象';
+    document.getElementById('payoutDate1').innerHTML='—';
+  }
+}
+</script>
+</body>
+</html>
